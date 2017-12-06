@@ -1,0 +1,20 @@
+# ownCloud with MariaDB/MySQL
+#
+version: '2'
+
+services:
+  #OwnCloud machine
+  owncloud:
+    image: owncloud
+    ports:
+      - 8080:80 # CHange port from 8080 to any other port if you like. This is the port you will reach your server at.
+    volumes:
+     - ~/.owncloud_docker:/var/www/html # This makes sure your owncloud data is stored on your Mac. You can change the folder by replacing ~/.owncloud_docker with any other folder
+
+  # Database server
+  mysql:
+    image: mariadb
+    volumes:
+     - ~/.mariadb_docker:/var/lib/mysql # This makes sure your database dat ais stored on your Mac. You can change the folder by replacing ~/.mariadb_docker with any other folder
+    environment:
+      MYSQL_ROOT_PASSWORD: example # PLEASE CHANGE THIS
