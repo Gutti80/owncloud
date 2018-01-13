@@ -1,20 +1,67 @@
-# ownCloud with MariaDB/MySQL
-#
-version: '2'
+version: '3'
 
 services:
-  #OwnCloud machine
   owncloud:
-    image: owncloud
+    image: owncloud/server:${VERSION}
+    restart: always
+    container_name: owncloud-server
     ports:
-      - 8080:80 # CHange port from 8080 to any other port if you like. This is the port you will reach your server at.
-    volumes:
-     - ~/.owncloud_docker:/var/www/html # This makes sure your owncloud data is stored on your Mac. You can change the folder by replacing ~/.owncloud_docker with any other folder
-
-  # Database server
-  mysql:
-    image: mariadb
-    volumes:
-     - ~/.mariadb_docker:/var/lib/mysql # This makes sure your database dat ais stored on your Mac. You can change the folder by replacing ~/.mariadb_docker with any other folder
+       - ${HTTPS_PORT}:443
+       - ${HTTP_PORT}:80
+    depends_on:
+      - db
+      - redis
     environment:
-      MYSQL_ROOT_PASSWORD: example # PLEASE CHANGE THIS
+      - OWNCLOUD_DOMAIN=${DOMAIN}
+      - OWNCLOUD_DB_TYPE=mysql
+      - OWNCLOUD_DB_NAME=owncloud
+      - OWNCLOUD_DB_USERNAME=root
+      - OWNCLOUD_DB_PASSWORD=gV49Cs13
+      - OWNCLOUD_DB_HOST=db
+      - OWNCLOUD_ADMIN_USERNAME=${ADMIN_USERNAME}
+      - OWNCLOUD_ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - OWNCLOUD_UTF8MB4_ENABLED=true
+      - OWNCLOUD_REDIS_ENABLED=true
+      - OWNCLOUD_REDIS_HOST=redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/status.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - /Volumes/extern/owncloud_docker/data:/mnt/data
+
+  db:
+    image: webhippie/mariadb:latest
+    restart: always
+    container_name: owncloud-db
+    environment:
+      - MARIADB_ROOT_PASSWORD=owncloud
+      - MARIADB_USERNAME=root
+      - MARIADB_PASSWORD=gV49Cs13
+      - MARIADB_DATABASE=owncloud
+      - MARIADB_MAX_ALLOWED_PACKET=128M
+      - MARIADB_INNODB_LOG_FILE_SIZE=64M
+      - MARIADB_INNODB_LARGE_PREFIX=ON
+      - MARIADB_INNODB_FILE_FORMAT=Barracuda
+    healthcheck:
+      test: ["CMD", "/usr/bin/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - /Volumes/extern/owncloud_docker/mysql:/var/lib/mysql
+
+  redis:
+    image: webhippie/redis:latest
+    restart: always
+    container_name: owncloud-redis
+    environment:
+      - REDIS_MAXCONN=10000
+    healthcheck:
+      test: ["CMD", "/usr/bin/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - /Volumes/extern/owncloud_docker/redis:/var/lib/redis
